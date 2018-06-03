@@ -131,7 +131,7 @@ namespace WpfApp
        
             try
             {
-                MainWindow mainWindow = new MainWindow(user); // Inicialize main window
+                MainWindow mainWindow = new MainWindow(); // Inicialize main window
                 mainWindow.Show();
                 this.Close();
             }
