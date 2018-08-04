@@ -5,7 +5,7 @@ using System.Windows.Input;
 using TeleSharp.TL;
 using TLSharp.Core;
 
-namespace WpfApp
+namespace Shagram
 {
     /// <summary>
     /// Interaction logic for Login.xaml
