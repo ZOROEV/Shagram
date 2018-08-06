@@ -16,32 +16,20 @@ namespace Shagram
     /// </summary>
     public partial class Login : Window
     {
-        private string hash;
         private string NumberToSendMessage;
+        private string hash;
         private TelegramClient client;
 
         public Login()
         {
-            InitializeComponent();        
+            InitializeComponent();
 
-            FileSessionStore session = new FileSessionStore();
-            client = NewClient(session);
-            //client.ConnectAsync();
-            
-            if (client.IsUserAuthorized())//if user already authorised than open main application
-            {
-                MainWindow mainWindow = new MainWindow(); // Inicialize main window
-                mainWindow.Show();
-                this.Close();
-            } else
-            {
-                List<Country> countriesList = LoadJson(Directory.GetParent(Directory.GetCurrentDirectory()).Parent.FullName + "./countries.json");
-                
-                this.countriesCodesList.ItemsSource = countriesList;
-                this.countriesCodesList.DisplayMemberPath = "NameAndCode";
-                this.countriesCodesList.SelectedValuePath = "Dial_code";
-                this.countriesCodesList.SelectedIndex = 0;
-            }
+            List<Country> countriesList = LoadJson(Directory.GetParent(Directory.GetCurrentDirectory()).Parent.FullName + "./countries.json");
+
+            countriesCodesList.ItemsSource = countriesList;
+            countriesCodesList.DisplayMemberPath = "NameAndCode";
+            countriesCodesList.SelectedValuePath = "Dial_code";
+            countriesCodesList.SelectedIndex = 0;
         }
 
         private void window_close_MouseDown(object sender, MouseButtonEventArgs e)
@@ -51,12 +39,13 @@ namespace Shagram
 
         private void window_hide_MouseDown(object sender, MouseButtonEventArgs e)
         {
-            this.WindowState = WindowState.Minimized;
+            WindowState = WindowState.Minimized;
         }
 
         private async void Window_Loaded(object sender, RoutedEventArgs e)
         {
-            client = new TelegramClient(235585, "2c9039610774b160a14c9c3aa64bbf8c");
+            FileSessionStore session = new FileSessionStore();
+            client = NewClient(session);
             await client.ConnectAsync();
         }
 
@@ -68,83 +57,50 @@ namespace Shagram
             }
             catch (MissingApiConfigurationException ex)
             {
-                throw new Exception($"Please add your API settings to the `app.config` file. (More info: {MissingApiConfigurationException.InfoUrl})",
-                                    ex);
+                throw new Exception($"Please add your API settings to the `app.config` file. (More info: {MissingApiConfigurationException.InfoUrl})", ex);
             }
         }
 
         private async void btn_setPhoneNumber_Click(object sender, RoutedEventArgs e)
         {
-            try
-            { 
-                NumberToSendMessage = txt_phone_number.Text;
-                if (string.IsNullOrWhiteSpace(NumberToSendMessage)) return;
+            if (string.IsNullOrWhiteSpace(txt_phone_number.Text)) return;
 
-                string normalizedNumber = this.countriesCodesList.SelectedValue.ToString() + NumberToSendMessage;
-                /*if (!NumberToSendMessage.StartsWith("+"))
-                {
-                    normalizedNumber = NumberToSendMessage;
-                }
-                else
-                {
-                    normalizedNumber = NumberToSendMessage.Substring(1, NumberToSendMessage.Length - 1);
-                }*/
-                hash = await client.SendCodeRequestAsync(normalizedNumber);
+            NumberToSendMessage = countriesCodesList.SelectedValue.ToString() + txt_phone_number.Text;
 
-                lbl_phone_number.Visibility = Visibility.Hidden;
-                txt_phone_number.Visibility = Visibility.Hidden;
-                btn_setPhoneNumber.Visibility = Visibility.Hidden;
-                countriesCodesList.Visibility = Visibility.Hidden;
+            hash = await client.SendCodeRequestAsync(NumberToSendMessage);
+         
+            lbl_phone_number.Visibility = Visibility.Hidden;
+            txt_phone_number.Visibility = Visibility.Hidden;
+            btn_setPhoneNumber.Visibility = Visibility.Hidden;
+            countriesCodesList.Visibility = Visibility.Hidden;
 
-                lbl_received_code.Visibility = Visibility.Visible;
-                txt_received_code.Visibility = Visibility.Visible;
-                btn_setReceivedCode.Visibility = Visibility.Visible;
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message);
-            }
-
+            lbl_received_code.Visibility = Visibility.Visible;
+            txt_received_code.Visibility = Visibility.Visible;
+            btn_setReceivedCode.Visibility = Visibility.Visible;
         }
 
         private async void btn_setReceivedCode_Click(object sender, RoutedEventArgs e)
         {
-            var code = txt_received_code.Text; //get receiived code
+            string code = txt_received_code.Text; //get entered code
 
-            TLUser user = null;
+            if (string.IsNullOrWhiteSpace(code)) return;
+
             try
             {
-                user = await client.MakeAuthAsync(txt_phone_number.Text, hash, code);
+                await client.MakeAuthAsync(NumberToSendMessage, hash, code);
+
+                MainWindow mainWindow = new MainWindow(); // Inicialize main window
+                mainWindow.Show();
+                Close();
             }
             catch (Exception ex)
             {
                 MessageBox.Show(ex.Message);
-                //have to write it later
-                //var password = await client.GetPasswordSetting();
-                //var password_str = txtb_Password.Text;
-                //user = await client.MakeAuthWithPasswordAsync(password, password_str);
             }
-       
-            try
-            {
-                MainWindow mainWindow = new MainWindow(); // Inicialize main window
-                mainWindow.Show();
-                this.Close();
-            }
-            catch (Exception ex)
-            {
-
-            }
-        }
-
-        private void ComboBox_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
-        {
-
         }
 
         public List<Country> LoadJson(string jsonAdress)
         {
-            //
             using (StreamReader r = new StreamReader(jsonAdress))
             {
                 string json = r.ReadToEnd();
